@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Vocabulario Avanzado - Clase</title>
+    
+    <style>
+        :root { --p: #2c3e50; --a: #3498db; --bg: #f4f7f6; --ok: #27ae60; --bad: #e74c3c; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        /* Título centrado */
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        /* Botones para cambiar entre filas */
+        .row-selector {
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+            margin-bottom: 15px;
+        }
+
+        .row-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--p);
+            border-radius: 10px;
+            background: white;
+            color: var(--p);
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .row-btn.active {
+            background: var(--p);
+            color: white;
+        }
+
+        .card-container { 
+            perspective: 1000px;
+            width: 90vw; 
+            max-width: 450px; 
+            height: 300px; 
+            cursor: pointer;
+            touch-action: manipulation; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card { 
+            width: 100%;
+            height: 100%; 
+            position: relative; 
+            transition: transform 0.4s; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            border-radius: 15px;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+        }
+
+        .card.flipped { transform: rotateY(180deg); }
+
+        .face { 
+            position: absolute;
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 25px; 
+            box-sizing: border-box; 
+            border-radius: 15px; 
+            text-align: center; 
+            font-size: 1.4rem;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .front { background: white; color: var(--p); font-weight: bold; border: 2px solid #ddd; }
+        .back { background: var(--a); color: white; transform: rotateY(180deg); font-size: 1.2rem; }
+
+        .controls { 
+            margin-top: 15px;
+            display: flex; 
+            gap: 10px; 
+            width: 90vw; 
+            max-width: 450px;
+        }
+
+        .action-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+        }
+
+        button { 
+            flex: 1;
+            padding: 15px 10px; 
+            border: none; 
+            border-radius: 12px; 
+            background: var(--p); 
+            color: white; 
+            font-size: 1rem; 
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .btn-know { background: var(--ok); }
+        .btn-dont-know { background: var(--bad); }
+
+        .info { margin-top: 12px; font-weight: bold; color: #7f8c8d; }
+        
+        .btn-invert { 
+            background: #8e44ad; 
+            color: white; 
+            border: none;
+            border-radius: 12px;
+            padding: 15px; 
+            font-weight: bold; 
+            width: 90vw; 
+            max-width: 450px;
+            cursor: pointer; 
+            margin-bottom: 15px; 
+            font-size: 1rem;
+        }
+
+        /* Botón para reiniciar el progreso */
+        .btn-reset {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-weight: normal;
+            width: 90vw;
+            max-width: 450px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .btn-reset:hover { opacity: 1; }
+
+        @media (max-height: 600px) {
+            .card-container { height: 220px; }
+            .face { font-size: 1.1rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Moda y compras</h1>
+    <button class="btn-invert" onclick="invertirIdiomas()">🔄 Invertir: <span id="modo-texto">Español ➡ Checo</span></button>
+
+    <div class="row-selector">
+        <button class="row-btn active" id="btn-fila-no" onclick="setFila('no')">Por aprender (<span id="count-no">0</span>)</button>
+        <button class="row-btn" id="btn-fila-si" onclick="setFila('si')">Ya aprendidas (<span id="count-si">0</span>)</button>
+    </div>
+
+    <div class="card-container" onclick="flip()">
+        <div class="card" id="c">
+            <div class="face front" id="q">Cargando...</div>
+            <div class="face back" id="a">...</div>
+        </div>
+    </div>
+
+    <div class="info" id="status">0 / 0</div>
+
+    <div class="controls">
+        <button onclick="prev()">⬅ Ant.</button>
+        <button onclick="shuffle()">🔀 Mezclar</button>
+        <button onclick="next()">Sig. ➡</button>
+    </div>
+
+    <div class="action-controls" id="eval-controls">
+        <button class="btn-dont-know" onclick="clasificarPalabra(false)">❌ No la sé</button>
+        <button class="btn-know" onclick="clasificarPalabra(true)">✔ Ya la sé</button>
+    </div>
+
+    <button class="btn-reset" onclick="reiniciarProgreso()">🗑 Reiniciar todo el progreso</button>
+
+<script>
+    // Tu lista original de palabras
+    const todasLasPalabras = [
+        {q: "algodón, m.", a: "bavlna"},
+        {q: "ante, m.", a: "semiš"},
+        {q: "fibra, f.", a: "vlákno"},
+        {q: "microfibra, f.", a: "mikrovlákno"},
+        {q: "fieltro, m.", a: "plsť, filc"},
+        {q: "franela, f.", a: "flanel"},
+        {q: "lana, f.", a: "vlna"},
+        {q: "licra, f.", a: "lycra, elastan"},
+        {q: "pana, f.", a: "manšestr"},
+        {q: "piel, f.", a: "kůže"},
+        {q: "terciopelo, m.", a: "samet"},
+        {q: "seda, f.", a: "hedvábí"},
+        {q: "lino, m.", a: "len"},
+        {q: "cachemir, m. / cachemira , f.", a: "kašmír"},
+        {q: "poliéster, m.", a: "polyester"},
+        {q: "de rayas", a: "proužkovaný / s proužky"},
+        {q: "de lunares", a: "puntíkovaný / s puntíky"},
+        {q: "de cuadros", a: "kostkovaný / s kostkami"},
+        {q: "de rombos", a: "kosočtvercový / s kosočtverci"},
+        {q: "de camuflaje", a: "maskáčový / kamuflážní"},
+        {q: "de lentejuelas", a: "s flitry"},
+        {q: "de flecos", a: "s třásněmi"},
+        {q: "estampado-a", a: "potištěný / se vzorem"},
+        {q: "tableado-a", a: "skládaný (s velkými záhyby)"},
+        {q: "plisado-a/con/de pliegues", a: "plisovaný / se záhyby"},
+        {q: "encaje, m.", a: "krajka"},
+        {q: "con parches", a: "s nášivkami / se záplatami"},
+        {q: "bordado-a", a: "vyšívaný"},
+        {q: "liso-a", a: "jednobarevný / hladký (bez vzoru)"},
+        {q: "moderno-a x pasada-o de moda, anticuado-a", a: "moderní x zastaralý, z módy / nemoderní"},
+        {q: "informal x formal", a: "neformální x formální"},
+        {q: "casual", a: "ležérní / pro běžné nošení"},
+        {q: "elegante", a: "elegantní"},
+        {q: "talla pequeña (s)", a: "malá velikost (S)"},
+        {q: "talla mediana (m)", a: "střední velikost (M)"},
+        {q: "talla grande (l)", a: "velká velikost (L)"},
+        {q: "extra grande (xl)", a: "nadměrná velikost (XL)"},
+        {q: "ajustado-da/ceñido-a x suelto-a/holgao-a", a: "přiléhavý, obtáhnutý x volný, plandavý"},
+        {q: "elástico-a", a: "elastický / pružný"},
+        {q: "ancho-a", a: "široký"},
+        {q: "me queda pequeña-o/ chico-a, grande...", a: "je mi to malé, velké..."},
+        {q: "me sienta bien, mal", a: "sluší mi to / nesluší mi to (případně: padne mi to / nepadne)"},
+        {q: "amarillo-a", a: "žlutý-á"},
+        {q: "naranja", a: "oranžový-á"},
+        {q: "azul claro", a: "světle modrá"},
+        {q: "azul marino", a: "námořnická modrá"},
+        {q: "azul turquesa", a: "tyrkysová"},
+        {q: "beis", a: "béžová"},
+        {q: "blanco", a: "bílá"},
+        {q: "fucsia", a: "fialorůžová"},
+        {q: "granate/burdeos", a: "vínová/bordo"},
+        {q: "marrón", a: "hnědá"},
+        {q: "caqui", a: "kaki"},
+        {q: "negro-a", a: "černý-á"},
+        {q: "gris", a: "šedý-á"},
+        {q: "rojo-a", a: "červený-á"},
+        {q: "rosa", a: "růžový-á"},
+        {q: "morado-a", a: "fialová"},
+        {q: "violeta", a: "tmavě fialová"},
+        {q: "malva", a: "slézová"},
+        {q: "lila", a: "šeříková"},
+        {q: "verde", a: "zelená"},
+        {q: "plateado-a", a: "stříbrný-á"},
+        {q: "dorado-a", a: "zlatý-á"},
+        {q: "brillante", a: "zářivý-á"},
+        {q: "transparente", a: "průhledný-á"},
+        {q: "descolorida-o", a: "vybledlý / opraný"},
+        {q: "chillón-a/ chillante", a: "křiklavá / výrazná (barva)"},
+        {q: "abrigo, m.", a: "kabát"},
+        {q: "bañador, m./traje/malla de baño , m.", a: "plavky"},
+        {q: "bikini, m.", a: "bikiny"},
+        {q: "bata , m.", a: "župan"},
+        {q: "albornoz, m.", a: "župan"},
+        {q: "blusa, f.", a: "halenka / blůza"},
+        {q: "bragas, f. pl./bombacha , f./ calzones, m. pl.", a: "kalhotky"},
+        {q: "calzoncillos, pl. m.", a: "trenky"},
+        {q: "calcetines, m. pl./medias , f. pl.", a: "ponožky"},
+        {q: "camisa, f.", a: "košile"},
+        {q: "camiseta, f./playera , f./remera , f.", a: "tričko"},
+        {q: "cazadora,f./campera,f./chamarra ,f.", a: "bunda"},
+        {q: "chaqueta,f./saco ,m.,americana,f.", a: "sako / bunda"},
+        {q: "chaquetón,m./sacón ,m.", a: "teplá krátká bunda"},
+        {q: "chubasquero, m./impermeable, m.", a: "pláštěnka"},
+        {q: "chaleco, m.", a: "vestička / vesta"},
+        {q: "(mini)falda,f./pollera, f. larga, con abertura", a: "sukně / minisukně (dlouhá, s rozparkem)"},
+        {q: "gabardina, f.", a: "trenčkot / balováňák (promokavý kabát)"},
+        {q: "jersey, m./pulóver,m./suéter,m.", a: "svetr"},
+        {q: "medias, f. pl.", a: "punčocháče / silonky"},
+        {q: "pantalones, m. pl./ pantalón, m. largo(s), corto(s), bombacho(s), campana", a: "kalhoty (dlouhé, kraťasy, kapsáče/harémky, zvonáče)"},
+        {q: "vaqueros,m.pl./jean,m./mezclilla ,f.", a: "džíny / rifle"},
+        {q: "pijama, m. f.", a: "pyžamo"},
+        {q: "camisón, m.", a: "noční košile"},
+        {q: "rebeca, f./chamarra de gamuza, f.", a: "pletený svetr na zapínání / kardigan"},
+        {q: "sudadera, f.", a: "mikina"},
+        {q: "sujetador,m./corpiño ,m./brasier ,m.", a: "podprsenka"},
+        {q: "top, m.", a: "top / tílko"},
+        {q: "traje, m.", a: "oblek (pánský)"},
+        {q: "vestido, m. de gala", a: "šaty (večerní/společenské)"},
+        {q: "peto, m.", a: "montérky / kalhoty s kšandami a náprsenkou"},
+        {q: "chándal,m./buzo ,m.", a: "tepláková souprava"},
+        {q: "mono, m.", a: "overal"},
+        {q: "faja, f.", a: "stahovací pás / korzetové prádlo"},
+        {q: "corsé, m.", a: "korzet"},
+        {q: "bajo, m./dobladillo, m.", a: "spodní lem / záložka"},
+        {q: "botón, m.", a: "knoflík"},
+        {q: "cremallera, f./cierre, m.", a: "zip"},
+        {q: "hebilla, f.", a: "přezka"},
+        {q: "costura, f.", a: "šev"},
+        {q: "cuello, m., redondo, en v/de pico, alto x escotado-da puño, m., simple, doble, con botón", a: "výstřih/goliér (kulatý, do V, rolák x s velkým výstřihem)"},
+        {q: "solapa, f.", a: "klopa"},
+        {q: "bolsillo, m.", a: "kapsa"},
+        {q: "manga, f., corta, larga, de 3⁄4, mariposa", a: "rukáv (krátký, dlouhý, tříčtvrteční, motýlkový)"},
+        {q: "cintura, f., alta, baja, elástica, ajustable", a: "pas (vysoký, snížený/bokový, elastický, nastavitelný)"},
+        {q: "tirante, m.", a: "ramínko / kšanda"},
+        {q: "hombrera, f.", a: "vycpávka do ramen"},
+        {q: "capucha, f.", a: "kapuce"},
+        {q: "espalda, f. descubierta, cruzada", a: "záda (odhalená, zkřížená)"},
+        {q: "forro, m., forrado-da", a: "podšívka / s podšívkou (podšitý)"},
+        {q: "anillo, m./sortija, f.", a: "prsten"},
+        {q: "broche m.", a: "brož"},
+        {q: "cadena, f.", a: "řetízek"},
+        {q: "cinturón, m.", a: "pásek / řemen"},
+        {q: "colgante, m., collar, m.", a: "přívěsek / náhrdelník"},
+        {q: "gargantilla, f.", a: "obojek / těsný náhrdelník (choker)"},
+        {q: "gemelos, m. pl.", a: "manžetové gombíky"},
+        {q: "guantes, m. pl.", a: "rukavice (prstové)"},
+        {q: "manoplas, f. pl.", a: "palčáky"},
+        {q: "pajarita, f./corbata de moñito", a: "motýlek"},
+        {q: "corbata, f.", a: "kravata"},
+        {q: "pañuelo, m.", a: "šátek / kapesník"},
+        {q: "pendiente, m./aro, m./arete, m.", a: "náušnice"},
+        {q: "pulsera, f.", a: "náramok"},
+        {q: "sombrero, m.", a: "klobouk"},
+        {q: "boina, f. , chapela", a: "baret"},
+        {q: "gorro, m.", a: "čepice"},
+        {q: "gorra, f.", a: "kšiltovka"},
+        {q: "bufanda, f.", a: "šála"},
+        {q: "bolsa, f.", a: "taška"},
+        {q: "bolso, f.", a: "kabelka"},
+        {q: "velo, m.", a: "závoj"},
+        {q: "tocado, m.", a: "ozdoba do vlasů / fascinátor"},
+        {q: "diadema, f.", a: "čelenka"},
+        {q: "peineta, f.", a: "ozdobný hřeben do vlasů"},
+        {q: "goma/liga para el pelo, gancho, m., pinza, f., horquilla, f.", a: "gumička do vlasů"},
+        {q: "gancho, m., pinza, f., horquilla, f.", a: "sponka / skřipec / pinetka"},
+        {q: "zapatos, m. pl.", a: "boty"},
+        {q: "zapatillas de deporte, f. pl./deportivas, f./tenis, m.", a: "tenisky / sportovní boty"},
+        {q: "sandalias,f./guaraches ,m.pl.", a: "sandály"},
+        {q: "chanclas, f. pl./chancletas, f. pl.", a: "žabky / pantofle k vodě"},
+        {q: "botas, f. pl. de montaña, de lluvia, vaqueras", a: "kozačky / pohorky / holínky / koně (kovbojské boty)"},
+        {q: "tacones, m. pl.", a: "lodičky / boty na podpatku"},
+        {q: "plataformas, f. pl.", a: "boty na platformě"},
+        {q: "mocasines, m. pl.", a: "mokasíny"},
+        {q: "alpargatas, f. pl.", a: "espadrilky"},
+        {q: "pantuflas, f. pl.", a: "bačkory / domácí obuv"},
+        {q: "empeine, m.", a: "nárt"},
+        {q: "suela, f.", a: "podrážka"},
+        {q: "plantilla, f.", a: "stélka / vložka do bot"},
+        {q: "tacón, m.", a: "podpatek"},
+        {q: "cordones, m. pl., agujetas, f. pl.", a: "tkaničky"},
+        {q: "hebilla, f.", a: "přeska"},
+        {q: "velcro, m.", a: "suchý zip"},
+        {q: "puntera, f.", a: "špička boty"},
+        {q: "centro comercial, m.", a: "nákupní centrum / obchodní dům"},
+        {q: "grandes almacenes, m. pl.", a: "obchodní dům (př. Kotva, Máj)"},
+        {q: "mercado, m.", a: "trh / tržiště"},
+        {q: "boutique, f.", a: "butik"},
+        {q: "tienda, f. en línea, de segunda mano", a: "obchod (internetový / e-shop, sekáč / second-hand)"},
+        {q: "pagar con tarjeta, en efectivo", a: "platit kartou / v hotovosti"},
+        {q: "fila, f.", a: "fronta"},
+        {q: "caja, f.", a: "pokladna"},
+        {q: "cajero-a, f. m.", a: "pokladní"},
+        {q: "dependiente-a, f. m.", a: "prodavač / prodavačka"},
+        {q: "escaparate, m.", a: "výloha"},
+        {q: "maniquí, m.", a: "figurína"},
+        {q: "percha,f./gancho ,m.", a: "ramínko na šaty"},
+        {q: "factura, f.", a: "faktura"},
+        {q: "precio, m.", a: "cena"},
+        {q: "liquidación, f.", a: "výprodej (likvidace zásob)"},
+        {q: "recibo, m.", a: "účtenka / doklad o zaplacení"},
+        {q: "oferta, f.", a: "nabídka / akce"},
+        {q: "descuento, m.", a: "sleva"},
+        {q: "promoción, f.", a: "promoakce / výhodná nabídka"},
+        {q: "etiqueta, f.", a: "visačka / štítek"},
+        {q: "probador, m./vestuario, m.", a: "zkušební kabinka"},
+        {q: "marca de lujo, de alta costura, de moda rápida", a: "luxusní značka, značka vysoké krejčoviny (haute couture), fast-fashion (rychlá móda)"},
+        {q: "desfile de moda, m.", a: "módní přehlídka"},
+        {q: "semana de la moda, f.", a: "týden módy (Fashion Week)"},
+        {q: "lanzamiento, m.", a: "uvedení na trh / přehlídka nové kolekce"},
+        {q: "edición limitada, f.", a: "limitovaná edice"},
+        {q: "prenda, f. única", a: "unikátní kus oblečení"},
+        {q: "customizado-a", a: "upravený na přání / kustomizovaný"},
+        {q: "pasarela, f.", a: "přehlídkové molo"},
+        {q: "colección, f.", a: "kolekce"},
+        {q: "confección, f.", a: "konfekce / šití"},
+        {q: "hecho a medida, a mano", a: "šité na míru / ručně vyrobené"},
+        {q: "tomar medidas", a: "brát míry"},
+        {q: "prueba, f. de vestuario", a: "zkouška šatů/oděvu"},
+        {q: "boceto, m.", a: "náčrt / skica"},
+        {q: "atelier, m.", a: "ateliér"},
+        {q: "taller de costura, m.", a: "krejčovská dílna"},
+        {q: "diseñador-a, f. m., modista, f. m., sastre, m., costurera, f.", a: "návrhář/ka, modistka, krejčí, švadlena"},
+        {q: "modelo, f. m.", a: "model / modelka"},
+        {q: "tendencia, f.", a: "trend"},
+        {q: "abrigar(se)", a: "(teple) se obléknout / zahřát"},
+        {q: "atar(se), abrochar(se) x desabrochar, desatar(se)", a: "zavázat (se), zapnout (se) x rozepnout, rozvázat (se)"},
+        {q: "acortar", a: "zkrátit"},
+        {q: "ajustar", a: "upravit / zabrat (oblečení)"},
+        {q: "arreglarse", a: "hodit se do gala / upravit se"},
+        {q: "arrugarse", a: "zmačkat se"},
+        {q: "atarse/amarrar", a: "přivázat se / zavázat se"},
+        {q: "cambiarse", a: "převléct se"},
+        {q: "coser x descoser(se)", a: "šít x párat / rozpárat se"},
+        {q: "desnudar(se)", a: "svléknout (se)"},
+        {q: "tintar x desteñir", a: "obarvit x pustit barvu / vyblednout"},
+        {q: "estilizar", a: "zeštíhlovat / dodat styl"},
+        {q: "estrenar", a: "vzít si poprvé na sebe / mít premiéru"},
+        {q: "llevar puesto", a: "mít na sobě"},
+        {q: "manchar(se)", a: "umazat (se) / udělat skvrnu"},
+        {q: "meter/coger (el bajo)", a: "založit / zabrat (délku)"},
+        {q: "planchar", a: "žehlit"},
+        {q: "calzar x descalzar", a: "obout x zout"},
+        {q: "encoger(se)x ensanchar(se)", a: "srazit se (při praní) x rozšířit / rozetáhnout"},
+        {q: "lucir", a: "předvést se / pyšnit se čím / nosit s elegancí"},
+        {q: "**quedar como un guante", a: "padnout jako ulitý"},
+        {q: "**llevar los pantalones", a: "nosit kalhoty (mít hlavní slovo v domácnosti)"},
+        {q: "**ponerse en los zapatos de otra persona", a: "vžít se do situace někoho jiného / vstoupit do cizích bot"},
+        {q: "**estar como un niño con zapatos nuevos", a: "mít radost jako malé dítě"},
+        {q: "**meterse en camisa de once varas", a: "pouštět se do něčeho příliš složitého / strkat nos do cizích věcí"},
+        {q: "**apretarse el cinturón", a: "utáhnout si opasek (šetřit)"},
+        {q: "**quitarse el sombrero", a: "smeknout klobouk (vyjádřit obdiv)"},
+        {q: "**hacer algo con la gorra", a: "zvládnout něco levou zadní / s prstem v nose"},
+        {q: "**cambiar de chaqueta/ ser un chaquetero", a: "převlékat kabáty / být převlékač kabátů"},
+        {q: "**mojar la camiseta", a: "potit krev / dát do toho všechno (tvrdě pracovat)"},
+        {q: "**hacer un corte de mangas", a: "udělat nelichotivé/vulgární gesto rukou (ukázat fakáče či vztyčený loket)"},
+        {q: "**quedarse a cuadros", a: "zůstat koukat jako blázen / být úplně paf"},
+        {q: "**tener manga ancha", a: "mít velké pochopení / mít volnější metr (být benevolentní)"},
+        {q: "**ser un calzonazos", a: "být pod papučou (podpantoflák)"},
+        {q: "**ponerse las botas", a: "napakovat se / dát si pořádně do nosu"},
+        {q: "**pillar en bragas", a: "přistihnout někoho v nedbalkách / bez přípravy"},
+        {q: "**aunque la mona se vista de seda, mona se queda", a: "opice zůstane opicí, i kdyby nosila hedvábí (zvyk je železná košile / šaty dělají člověka, ale charakter nezmění)"},
+        {q: "**el mundo es un pañuelo", a: "svět je malý"},
+        {q: "**encontrar la horma de su zapato", a: "narazit na někoho sobě rovného / padnout na kosa"},
+        {q: "**meterse a alguien en el bolsillo", a: "omotat si někoho kolem prstu / získat si někoho"},
+        {q: "**no caber ni un alfiler", a: "být hlava na hlavě (naprosto plno)"},
+        {q: "**perder el hilo", a: "ztratit nit"},
+        {q: "**tener buena percha", a: "vypadat dobře ve všem / mít dobrou postavu na oblečení"},
+        {q: "**poner el broche de oro", a: "nasadit tomu korunu / udělat zlatou tečku za čím"},
+        {q: "**ser un maniquí", a: "být jako figurína (bez výrazu či pasivní)"},
+
+
+    ];
+
+    // Listas dinámicas para clasificar las palabras
+    let palabrasNoConozco = [];
+    let palabrasYaConozco = [];
+    let invertido = false;
+    let filaActiva = 'no'; 
+    let idx = 0;
+
+    const cardEl = document.getElementById('c');
+    const qEl = document.getElementById('q');
+    const aEl = document.getElementById('a');
+    const sEl = document.getElementById('status');
+
+    // FUNCIÓN PARA GUARDAR EN LOCALSTORAGE
+    function guardarProgreso() {
+        localStorage.setItem('palabrasNoConozco', JSON.stringify(palabrasNoConozco));
+        localStorage.setItem('palabrasYaConozco', JSON.stringify(palabrasYaConozco));
+    }
+
+    // FUNCIÓN PARA CARGAR DESDE LOCALSTORAGE AL INICIAR
+    function cargarProgreso() {
+        const localNoConozco = localStorage.getItem('palabrasNoConozco');
+        const localYaConozco = localStorage.getItem('palabrasYaConozco');
+
+        if (localNoConozco !== null && localYaConozco !== null) {
+            // Si ya existe un progreso guardado, lo cargamos
+            palabrasNoConozco = JSON.parse(localNoConozco);
+            palabrasYaConozco = JSON.parse(localYaConozco);
+        } else {
+            // Si es la primera vez, iniciamos con la lista completa de origen
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+        }
+    }
+
+    // FUNCIÓN PARA REINICIAR TODO
+    function reiniciarProgreso() {
+        if (confirm("¿Seguro que quieres borrar tu progreso y empezar de cero?")) {
+            localStorage.removeItem('palabrasNoConozco');
+            localStorage.removeItem('palabrasYaConozco');
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+            idx = 0;
+            filaActiva = 'no';
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+            update();
+        }
+    }
+
+    function getListaActiva() {
+        return filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+    }
+
+    function update() {
+        const lista = getListaActiva();
+        cardEl.classList.remove('flipped');
+
+        document.getElementById('count-no').innerText = palabrasNoConozco.length;
+        document.getElementById('count-si').innerText = palabrasYaConozco.length;
+
+        if (lista.length === 0) {
+            qEl.innerText = "¡Lista vacía!";
+            aEl.innerText = filaActiva === 'no' ? "¡Enhorabuena, has repasado todo!" : "No has añadido ninguna palabra aquí aún.";
+            sEl.innerText = "0 / 0";
+            return;
+        }
+
+        if (idx >= lista.length) idx = Math.max(0, lista.length - 1);
+
+        setTimeout(() => {
+            if (!invertido) {
+                qEl.innerText = lista[idx].q; 
+                aEl.innerText = lista[idx].a; 
+            } else {
+                qEl.innerText = Math.random() < 0 ? "Bug" : lista[idx].a; // Corrección visual fluida
+                aEl.innerText = lista[idx].q; 
+            }
+            sEl.innerText = `${idx + 1} / ${lista.length}`;
+        }, 100);
+    }    
+
+    function flip() { 
+        const lista = getListaActiva();
+        if (lista.length > 0) cardEl.classList.toggle('flipped'); 
+    }
+    
+    function next() { 
+        const lista = getListaActiva();
+        if(idx < lista.length - 1) { idx++; update(); } 
+    }
+    
+    function prev() { 
+        if(idx > 0) { idx--; update(); } 
+    }
+
+    function shuffle() {
+        const lista = getListaActiva();
+        if (lista.length > 0) {
+            lista.sort(() => Math.random() - 0.5);
+            idx = 0;
+            guardarProgreso(); // Guardamos el orden mezclado
+            update();
+        }
+    } 
+
+    function invertirIdiomas() {
+        invertido = !invertido;
+        document.getElementById('modo-texto').innerText = invertido ? "Checo ➡ Español" : "Español ➡ Checo";
+        update();
+    }
+ 
+    function setFila(tipo) {
+        filaActiva = tipo;
+        idx = 0;
+        
+        if (tipo === 'no') {
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+        } else {
+            document.getElementById('btn-fila-no').classList.remove('active');
+            document.getElementById('btn-fila-si').classList.add('active');
+        }
+        
+        update();
+    }
+
+    function clasificarPalabra(loSabe) {
+        let listaOrigen = filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+        let listaDestino = filaActiva === 'no' ? palabrasYaConozco : palabrasNoConozco;
+
+        if (listaOrigen.length === 0) return;
+
+        if ((filaActiva === 'no' && !loSabe) || (filaActiva === 'si' && loSabe)) {
+            next();
+            return;
+        }
+
+        const palabraMovida = listaOrigen.splice(idx, 1)[0];
+        listaDestino.push(palabraMovida);
+
+        guardarProgreso(); // Guardamos los cambios automáticamente
+        update();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'ArrowRight') next();
+        if(e.code === 'ArrowLeft') prev();
+        if(e.code === 'Space') flip();
+    });
+
+    // PASO INICIAL: Cargar progreso antes de renderizar la primera tarjeta
+    cargarProgreso();
+    update();
+</script>
+</body>
+</html>
